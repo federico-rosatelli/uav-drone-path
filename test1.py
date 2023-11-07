@@ -1,4 +1,4 @@
-from src import command
+from uav import command
 
 comm = command.NewCommand("example/grid1.txt")
 drone = command.NewDrone(comm,"Thermal","BHackFox",[command.INSPECT_CAMERA,command.INSPECT_THERMAL,command.ROTATE],800)

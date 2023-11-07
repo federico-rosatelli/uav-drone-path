@@ -1,4 +1,4 @@
-from src import grid, algorithm, visual
+from uav import grid, algorithm, visual
 import math
 import time
 
@@ -23,14 +23,14 @@ class Drone:
     def isActionAllowed(self,action):
         return action in self.allowed_actions
     
-    def isBatteryUp(self,path):
+    def isBatteryUp(self,path,base=BASE_COORDINATE):
         cost_action = 0
         for p in path:
             cost_action += sum(x[1] for x in p)
         if self.battery - cost_action < 0:
             return False
-        if not path[-1][-1][0] == BASE_COORDINATE:
-            cost_last_coordinate = sum(x[1] for x in algorithm.Dijkstra(self.grid,path[-1][-1][0],BASE_COORDINATE))
+        if not path[-1][-1][0] == base:
+            cost_last_coordinate = sum(x[1] for x in algorithm.Dijkstra(self.grid,path[-1][-1][0],base))
             if self.battery - (cost_action + cost_last_coordinate) < 0:
                 return False
         self.battery = self.battery - cost_action
@@ -47,6 +47,7 @@ class Drone:
 
 class Block:
     def __init__(self,coordinates:list,name:str) -> None:
+        self.coordinates = coordinates
         self.min = coordinates[0]
         self.max = coordinates[1]
         self.trajectory = [(self.min[0],self.min[1]),(self.max[0],self.min[1]),(self.min[0],self.max[1]),(self.max[0],self.max[1])]
@@ -78,6 +79,9 @@ class Block:
     
     def getName(self):
         return self.block_name
+    
+    def calculateCenter(self):
+        return (abs(self.coordinates[0][0]-self.coordinates[1][0])+self.coordinates[0][0],abs(self.coordinates[0][1]-self.coordinates[1][1])+self.coordinates[0][1],abs(self.coordinates[0][2]-self.coordinates[1][2])+self.coordinates[0][2])
 
 
 class Action:
@@ -112,7 +116,7 @@ class Action:
             
             return paths
         if self.type == BASE:
-            return [algorithm.Dijkstra(grid_complete,self.initial_coordinates,(0,0,0))]
+            return [algorithm.Dijkstra(grid_complete,self.initial_coordinates,self.block.calculateCenter())]
     
         if self.type == INSPECT_CAMERA:
             coordinate = self.block.spot()
@@ -136,14 +140,19 @@ class Command:
         self.grid_complete = grid_complete
         self.obstacles_coordinates = obstacles_coordinates
         self.obstacles = obstacles
+        self.base = (0,0,0)
         self.actions:list[Action] = []
         self.baseBlock = self.createBaseBlock()
-        self.path = [((0,0,0),0)]
+        self.path = [(self.base,0)]
         self.blocks = self.createBlocks()
     def createAction(self,name:str,drone:Drone,action_type:int,block:Block,coordinateZ:int=0):
         action = Action(name,drone,action_type,block,self.path[-1][0],coordinateZ)
         self.addAction(action)
         return action
+    def setBase(self,base:tuple):
+        self.base = base
+        self.path[-1] = (self.base,0)
+        self.baseBlock = self.createBaseBlock()
     def addAction(self,action:Action):
         path = action.execute(self.grid_complete)
         if not action.isBatteryUp(path):
@@ -157,7 +166,7 @@ class Command:
     def returnPath(self):
         return self.path
     def createBaseBlock(self):
-        return Block([[0,0,0],[0,0,0]],"BaseBlock")
+        return Block([self.base,self.base],"BaseBlock")
     def returnToBase(self,name,drone):
         action = Action(name,drone,BASE,self.baseBlock,self.path[-1][0],0)
         self.addAction(action)
@@ -187,24 +196,3 @@ def NewCommand(filename:str):
 def NewDrone(command:Command,drone_type:str,drone_name:str,drone_actions:list,battery:int):
     return Drone(command.getGrid(),drone_type,drone_name,drone_actions,battery)
 
-
-
-# drone = Drone(grid_complete,"Thermal","ProvaDrone",[INSPECT_CAMERA,INSPECT_THERMAL,ROTATE])
-# block1 = Block(obstacles_coordinates[0],"Blocco1")
-# block2 = Block(obstacles_coordinates[1],"Blocco2")
-# block3 = Block(obstacles_coordinates[2],"Blocco3")
-# block6 = Block(obstacles_coordinates[6],"Blocco6")
-# block7 = Block(obstacles_coordinates[7],"Blocco7")
-
-# command = Command(grid_complete)
-# command.createAction("fede",drone,ROTATE,block1,6)
-# command.createAction("Controllo2 blocco3",drone,ROTATE,block3,4)
-# command.createAction("Controllo2 blocco1",drone,ROTATE,block1,18)
-# command.createAction("Controllo2 blocco2",drone,ROTATE,block2,14)
-# command.createAction("Controllo2 blocco6",drone,INSPECT_CAMERA,block6)
-# command.createAction("Controllo2 blocco7",drone,ROTATE,block7,3)
-# # command.createAction("Controllo2 blocco7",drone,INSPECT_CAMERA,block7)
-# command.createAction("Controllo2 blocco2",drone,INSPECT_CAMERA,block2)
-# command.returnToBase("fede",drone)
-# # print(command.returnPath())
-# command.display(obstacles_coordinates)

@@ -15,7 +15,7 @@ UAV-Drone-Path is a package which allows you to create a coordinate grid with ob
 
 To get started import the command file from src:
 ```python
-from src import command
+from uav import command
 ```
 
 Now you can create the first Command and Drone object as:
