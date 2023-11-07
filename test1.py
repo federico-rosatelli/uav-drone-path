@@ -2,7 +2,7 @@ import uav
 from uav import command
 
 comm = command.NewCommand("example/grid1.txt")
-drone = command.NewDrone(comm,"Thermal","BHackFox",[command.INSPECT_CAMERA,command.INSPECT_THERMAL,command.ROTATE],800)
+drone = command.NewDrone(comm,"Thermal","BHackFox",[uav.INSPECT_CAMERA,uav.INSPECT_THERMAL,uav.ROTATE],800)
 
 print(comm.returnObstacles())
 
