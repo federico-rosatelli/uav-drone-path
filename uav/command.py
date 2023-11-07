@@ -187,12 +187,11 @@ class Command:
         return self.grid_complete
 
 
-def NewCommand(filename:str):
+def NewCommand(filename:str) -> Command:
     dimensions, obstacles_coordinates = grid.importGrid(filename)
     grid_complete, obstacles = grid.createGrid(dimensions,obstacles_coordinates)
-    command = Command(grid_complete,obstacles_coordinates,obstacles)
-    return command
+    return Command(grid_complete,obstacles_coordinates,obstacles)
 
-def NewDrone(command:Command,drone_type:str,drone_name:str,drone_actions:list,battery:int):
+def NewDrone(command:Command,drone_type:str,drone_name:str,drone_actions:list,battery:int) -> Drone:
     return Drone(command.getGrid(),drone_type,drone_name,drone_actions,battery)
 
