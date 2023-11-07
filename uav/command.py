@@ -4,12 +4,7 @@ import time
 
 BASE_COORDINATE = (0,0,0)
 
-BASE = 100
-INSPECT_CAMERA = 200
-INSPECT_THERMAL = 201
-INSPECT_OTHER = 202
-ROTATE = 300
-ROTATE_DIFFERENT_AXES = 301
+
 
 
 class Drone:
@@ -101,7 +96,7 @@ class Action:
         return self.type
     
     def execute(self,grid_complete):
-        if self.type == ROTATE:
+        if self.type == 300:
             nearest_coordinate = self.block.getNearestCoordinate(self.initial_coordinates)
             routes = self.block.calculatePath(nearest_coordinate)
             paths = []
@@ -115,10 +110,10 @@ class Action:
             paths.append(algorithm.Dijkstra(grid_complete,routes[len(routes)-1],routes[0]))
             
             return paths
-        if self.type == BASE:
+        if self.type == 100:
             return [algorithm.Dijkstra(grid_complete,self.initial_coordinates,self.block.calculateCenter())]
     
-        if self.type == INSPECT_CAMERA:
+        if self.type == 200:
             coordinate = self.block.spot()
             return [algorithm.Dijkstra(grid_complete,self.initial_coordinates,coordinate)]
     
@@ -168,7 +163,7 @@ class Command:
     def createBaseBlock(self):
         return Block([self.base,self.base],"BaseBlock")
     def returnToBase(self,name,drone):
-        action = Action(name,drone,BASE,self.baseBlock,self.path[-1][0],0)
+        action = Action(name,drone,100,self.baseBlock,self.path[-1][0],0)
         self.addAction(action)
 
     def display(self):
