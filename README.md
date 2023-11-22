@@ -40,6 +40,37 @@ To create you personal grid you have to create a .txt file like this:
 ```
 Remember that each coordinate is `(x,y,z)` formatted
 
+# Field based on Border
+This part of the library is based on the creation of a field from geographical coordinates which can be understood as borders of states and/or geographical areas.
+
+The creation of the field occurs via the `field` module. Through a few simple instructions, complex routes can be created that allow a drone to inspect well-defined areas of the border.
+
+<img src="img/Figure_3.png"  width="500" height="500" alt="test3 output">
+<img src="img/Figure_4.png"  width="500" height="500" alt="test4 output">
+
+## Usage
+The use of this module is exactly the same as the previous one.
+
+Import the command file from uav:
+```python
+from uav import command
+```
+
+You can create a Field class as:
+```python
+field = command.NewField(name="BHackFox")
+field.CreateField("italy/italy_border.csv",1)
+
+```
+
+To execute and create a field path with visual result:
+```python
+coordinates = field.GetCoordinates()
+drone_path = field.DronePathBorder()
+field.DisplayBorderPath()
+```
+
+
 # Why?
 Because I was bored and I like UAV and drones :)
 
@@ -53,6 +84,9 @@ This package is not completed.
 - [x] Drone Battery Usage
 - [x] Rotation Action
 - [x] Hawk's View Action
+- [x] 2D View of field
+- [x] Best path border control
+- [ ] Obstacle identifier in field control
 - [ ] Implement More Action
 - [ ] Live Drone Test
 - [ ] Panorama mapping and Grid Implementation

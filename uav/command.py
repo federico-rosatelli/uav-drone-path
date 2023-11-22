@@ -1,4 +1,7 @@
-from uav import grid, algorithm, visual
+"""
+Command Module
+"""
+from uav import grid, algorithm, visual, field
 import math
 import time
 
@@ -190,3 +193,37 @@ def NewCommand(filename:str) -> Command:
 def NewDrone(command:Command,drone_type:str,drone_name:str,drone_actions:list,battery:int) -> Drone:
     return Drone(command.getGrid(),drone_type,drone_name,drone_actions,battery)
 
+
+
+class Field:
+    def __init__(self,name:str,verbose=False) -> None:
+        self.time = time.time()
+        self.name = name
+        self.verbose = verbose
+        self.field:field.Border
+        self.drone_path:list
+    
+    def __str__(self) -> str:
+        return self.name
+    
+    def setVerbose(self,verbose:bool) -> None:
+        self.verbose = verbose
+    
+    def GetCoordinates(self):
+        return self.field.getCoordinates()
+    
+    def CreateField(self,file_name:str,border_index:int=1) -> None:
+        self.field = field.NewBorder(file_name,border_index)
+    
+    def DronePathBorder(self,max_distance:int=0.003) -> list:
+        self.drone_path = field.DronePathBorder(self.field,max_distance)
+        if self.verbose:
+            print(self.drone_path)
+        return self.drone_path
+    
+    def DisplayBorderPath(self) -> None:
+        field.DisplayBorderPath(self.field,self.drone_path,self.name)
+
+
+def NewField(name:str="",verbose:bool=False):
+    return Field(name,verbose)
