@@ -9,18 +9,27 @@ class Border:
     Border is a class that allows you to create a virtual map of the borders of a country and/or area.
     It takes as input data from a csv file formatted as geographic coordinates
     """
-    def __init__(self,file_name:str,index_border:int) -> None:
+    def __init__(self,file_name:str,index_border:int,formatted:str) -> None:
         self.file_name = file_name
         self.index_border = index_border
-        self.list_coordinates = self.borderCollector() 
+        self.list_coordinates = self.borderCollector(formatted) 
 
-    def borderCollector(self) -> list:
-
+    
+    def borderCollector(self,formatted) -> list:
         rd = open(self.file_name).readlines()
 
         border_raw = rd[self.index_border]
         border_raw = border_raw[1:border_raw[1:].index('"')+1]
         border_raw = border_raw[border_raw.index("((")+2:border_raw.index("))")]
+
+        if formatted == "multi":
+            list_coordinates_collector_raw = [list_coordinate.split(",") for list_coordinate in border_raw.split("),(")]
+            list_coordinates_collector = []
+            for list_coordinate in list_coordinates_collector_raw:
+                coordinates_raws = [coordinate.split(" ") for coordinate in list_coordinate]
+                coordinates = [(float(coordinate[0]),float(coordinate[1])) for coordinate in coordinates_raws]
+                list_coordinates_collector += coordinates
+            return list_coordinates_collector
 
         list_coordinates_raw = [coordinate.split(" ") for coordinate in border_raw.split(",")]
         list_coordinates = [(float(coordinate[0]),float(coordinate[1])) for coordinate in list_coordinates_raw]
@@ -128,7 +137,7 @@ def define_circle(coordinates):
     return center_point, max_distance
 
 
-def display_border_field(list_coordinates,prev_not_view,name_field) -> None:
+def display_border_field(list_coordinates,prev_not_view,name_field,center) -> None:
     fig = plt.figure()
     ax = fig.add_subplot()
     new_coordinates = [[],[]]
@@ -144,24 +153,25 @@ def display_border_field(list_coordinates,prev_not_view,name_field) -> None:
     
     ax.plot(path[0],path[1],'b')
     
-    center,radius = define_circle(list_coordinates)
-    circle = plt.Circle(center, radius, color='g', fill=False,clip_on=False)
-    ax.add_patch(circle)
-    ax.plot([center[0]],[center[1]],'*')
+    if center:
+        center,radius = define_circle(list_coordinates)
+        circle = plt.Circle(center, radius, color='g', fill=False,clip_on=False)
+        ax.add_patch(circle)
+        ax.plot([center[0]],[center[1]],'*')
 
     ax.grid(False)
     ax.set_title(f'{name_field if name_field != "" else "Field Drone Path"}')
     plt.show()
 
 
-def NewBorder(file_name:str,border_index:int=-1):
-    return Border(file_name,border_index)
+def NewBorder(file_name:str,border_index:int,formatted:str):
+    return Border(file_name,border_index,formatted)
 
 
 def DronePathBorder(border:Border,max_distance:int):
     list_coordinates = border.getCoordinates().copy()
     return path_drone_field(list_coordinates,max_distance)
 
-def DisplayBorderPath(border:Border,path_drone_border:list,name_field:str=""):
+def DisplayBorderPath(border:Border,path_drone_border:list,name_field:str,center:bool):
     list_coordinates = border.getCoordinates()
-    display_border_field(list_coordinates,path_drone_border,name_field)
+    display_border_field(list_coordinates,path_drone_border,name_field,center)

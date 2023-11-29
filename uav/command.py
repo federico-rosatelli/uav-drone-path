@@ -196,6 +196,9 @@ def NewDrone(command:Command,drone_type:str,drone_name:str,drone_actions:list,ba
 
 
 class Field:
+    """
+    Field class allows you to manage the functions and classes of the field module
+    """
     def __init__(self,name:str,verbose=False) -> None:
         self.time = time.time()
         self.name = name
@@ -212,18 +215,29 @@ class Field:
     def GetCoordinates(self):
         return self.field.getCoordinates()
     
-    def CreateField(self,file_name:str,border_index:int=1) -> None:
-        self.field = field.NewBorder(file_name,border_index)
+    def CreateField(self,file_name:str,border_index:int=1,formatted:str="") -> None:
+        """
+        - file_name: name of the csv file
+        - border_index: the index of the csv file. Setted to 1
+        - formatted: how the csv file is formatted -> " " | multi . Setted to " "
+        """
+        self.field = field.NewBorder(file_name,border_index,formatted)
     
-    def DronePathBorder(self,max_distance:int=0.003) -> list:
+    def DronePathBorder(self,max_distance:float=0.003) -> list:
+        """
+        - max_distance: maximum observation distance of the drone. Setted to 0.003
+        """
         self.drone_path = field.DronePathBorder(self.field,max_distance)
         if self.verbose:
             print(self.drone_path)
         return self.drone_path
     
-    def DisplayBorderPath(self) -> None:
-        field.DisplayBorderPath(self.field,self.drone_path,self.name)
+    def DisplayBorderPath(self,display_center:bool=False) -> None:
+        field.DisplayBorderPath(self.field,self.drone_path,self.name,display_center)
 
 
 def NewField(name:str="",verbose:bool=False):
+    """
+    Allows you to access and use Field class
+    """
     return Field(name,verbose)
