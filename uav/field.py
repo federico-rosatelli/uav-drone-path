@@ -3,6 +3,9 @@ Field Module
 """
 import math
 import matplotlib.pyplot as plt
+from shapely.geometry import LineString, Point, Polygon
+from shapely.ops import triangulate
+
 
 class Border:
     """
@@ -25,7 +28,7 @@ class Border:
         if formatted == "multi":
             list_coordinates_collector_raw = [list_coordinate.split(",") for list_coordinate in border_raw.split("),(")]
             list_coordinates_collector = []
-            for list_coordinate in list_coordinates_collector_raw:
+            for list_coordinate in [list_coordinates_collector_raw[0]]:
                 coordinates_raws = [coordinate.split(" ") for coordinate in list_coordinate]
                 coordinates = [(float(coordinate[0]),float(coordinate[1])) for coordinate in coordinates_raws]
                 list_coordinates_collector += coordinates
@@ -39,46 +42,73 @@ class Border:
     def __len__(self) -> int:
         return len(self.list_coordinates)
     
-    def __getitem__(self,i:int):
+    def __getitem__(self,i:int) -> tuple:
         return self.list_coordinates[i]
     
     def getCoordinates(self) -> list:
         return self.list_coordinates
 
 
-def path_drone_field(open_list,base_distance):
+def path_drone_field(list_coordinates,base_distance):
+    open_list = list_coordinates.copy()
+    polygon = Polygon(list_coordinates)
+    polygon_ext = LineString(list(polygon.exterior.coords))
+
     closed_list = [open_list[0]]
     i = 0
     while open_list:
-        coordinate = open_list[0]
+        point1 = (open_list[i][0],open_list[i][1])
+        # point_a = Point(point1[0],point1[1])
+        # coordinate = open_list[i]
         distances = []
         k = 0
-        point1 = (open_list[i][0],open_list[i][1])
         open_list.pop(i)
+        # deleting = []
         while k < len(open_list):
-            if open_list[k] == coordinate:
-                k += 1
-                continue
-
             point2 = (open_list[k][0],open_list[k][1])
             distance = math.sqrt((point1[0]-point2[0])**2+(point1[1]-point2[1])**2)
             
             if distance >= base_distance:
+                
                 distances.append((distance,k))
                 k += 1
-                
+
+
             else:
+                # deleting.append((distance,point2))
                 open_list.pop(k)
             
         if len(distances) == 0:
             return closed_list
         min_distance = min(distances, key=lambda x: x[0])
+        
         i = min_distance[1]
+        # point_b = Point(open_list[i][0],open_list[i][1])
+        # segment = LineString([point_a, point_b])
+        # while not segment.within(polygon) and len(distances)>1:
+        #     distances.pop(distances.index(min_distance))
+        #     min_distance = min(distances, key=lambda x: x[0])
+        #     i = min_distance[1]
+        #     point_b = Point(open_list[i][0],open_list[i][1])
+        #     segment = LineString([point_a, point_b])
+
+        # if not segment.within(polygon) and deleting:
+        #     good = (-math.inf,(0,0))
+        #     for dell in deleting:
+        #         point_b = Point(dell[1][0],dell[1][1])
+        #         segment = LineString([point_a, point_b])
+        #         if segment.within(polygon) and dell[0] > good[0]:
+        #             good = dell
+        #     open_list.append(dell[1])
+        #     i = len(open_list) - 1
+            # for dell in deleting:
+            #     if i != dell[1]:
+            #         open_list.pop(dell[1])
+
         closed_list.append(open_list[i])
 
     return closed_list
         
-
 
 def define_circle_quarter(coordinates):
     d1 = 0
@@ -137,7 +167,7 @@ def define_circle(coordinates):
     return center_point, max_distance
 
 
-def display_border_field(list_coordinates,prev_not_view,name_field,center) -> None:
+def display_border_field(list_coordinates,prev_not_view,name_field,extra) -> None:
     fig = plt.figure()
     ax = fig.add_subplot()
     new_coordinates = [[],[]]
@@ -152,8 +182,21 @@ def display_border_field(list_coordinates,prev_not_view,name_field,center) -> No
     ax.plot(new_coordinates[0],new_coordinates[1],'r')
     
     ax.plot(path[0],path[1],'b')
-    
-    if center:
+
+    if "triangulate" in extra:
+
+        polygon = Polygon(list_coordinates)
+        triangles = triangulate_within(polygon)
+        
+        for t in triangles:
+            triangle = [[],[]]
+            coordinates = t.exterior.coords
+            for coo in coordinates:
+                triangle[0].append(coo[0])
+                triangle[1].append(coo[1])
+            ax.plot(triangle[0],triangle[1],'g')
+
+    if "circle" in extra:
         center,radius = define_circle(list_coordinates)
         circle = plt.Circle(center, radius, color='g', fill=False,clip_on=False)
         ax.add_patch(circle)
@@ -163,6 +206,8 @@ def display_border_field(list_coordinates,prev_not_view,name_field,center) -> No
     ax.set_title(f'{name_field if name_field != "" else "Field Drone Path"}')
     plt.show()
 
+def triangulate_within(polygon):
+    return [triangle for triangle in triangulate(polygon) if triangle.within(polygon)]
 
 def NewBorder(file_name:str,border_index:int,formatted:str):
     return Border(file_name,border_index,formatted)

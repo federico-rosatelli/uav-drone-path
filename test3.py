@@ -1,7 +1,7 @@
 from uav import command
 
-field = command.NewField(name="Italy")
-field.CreateField("italy/italy_border.csv",6,formatted="multi")
+field = command.NewField(name="Vatican City")
+field.CreateField("italy/italy_border.csv",-1)
 coordinates = field.GetCoordinates()
-drone_path = field.DronePathBorder(max_distance=0.3)
-field.DisplayBorderPath()
+drone_path = field.DronePathBorder(max_distance=0.003)
+field.DisplayBorderPath("triangulate")

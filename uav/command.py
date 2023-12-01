@@ -232,8 +232,8 @@ class Field:
             print(self.drone_path)
         return self.drone_path
     
-    def DisplayBorderPath(self,display_center:bool=False) -> None:
-        field.DisplayBorderPath(self.field,self.drone_path,self.name,display_center)
+    def DisplayBorderPath(self,info:list=[]) -> None:
+        field.DisplayBorderPath(self.field,self.drone_path,self.name,info)
 
 
 def NewField(name:str="",verbose:bool=False):
