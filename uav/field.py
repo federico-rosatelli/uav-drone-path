@@ -1,7 +1,9 @@
 """
 Field Module
 """
+import json
 import math
+import os
 import matplotlib.pyplot as plt
 from shapely.geometry import LineString, Point, Polygon
 from shapely.ops import triangulate
@@ -48,8 +50,146 @@ class Border:
     def getCoordinates(self) -> list:
         return self.list_coordinates
 
+def createDict(list_coordinates,base_distance):
+    polygon = Polygon(list_coordinates)
+    i = 0
+    graph = {}
+    not_seen = list_coordinates.copy()
+    while i < len(list_coordinates):
+        point1 = list_coordinates[i]
+        k = i + 1
+        graph[point1] = []
+        
+        while k-i < len(list_coordinates)/2 and k < len(list_coordinates):
+            # if k-i > len(list_coordinates)/2:
+            #     #print(len(graph[point1]))
+            #     break
+            # if k == i or list_coordinates[k] in graph:
+            #     k += 1
+            #     continue
+            point2 = list_coordinates[k]
+            distance = math.sqrt((point1[0]-point2[0])**2+(point1[1]-point2[1])**2)
+            if distance <= base_distance:
+                segment = LineString([point1, point2])
+                if segment.within(polygon):
+                    graph[point1].append((point2,distance))
+                    # if point2 in not_seen:
+                    #     not_seen.pop(not_seen.index(point2))
+                    #already_seen.append(point2)
+            k += 1
+        i += 1
+        print(len(graph[point1]))
+    # print([list_coordinates.index(s) for s in not_seen])
+    # print(len(list_coordinates))
+    return graph
 
-def path_drone_field(list_coordinates,base_distance):
+def remap_keys(mapping):
+    return [{'key':k, 'value': mapping[k]} for k in mapping]
+
+def keys_remap(mapping):
+    graph = {}
+    #print(mapping)
+    for i in range(len(mapping)):
+        key = mapping[i]["key"]
+        value = mapping[i]["value"]
+        graph[tuple(key)] = [(tuple(v[0]),v[1]) for v in value]
+    return graph
+
+def path_drone_field(list_coordinates,base_distance,json_file):
+    if json_file:
+        js_file = json_file[:json_file.index(".")]+"_"+str(base_distance)+".json"
+        if os.path.exists(js_file):
+            with open(js_file, 'r') as json_file:
+                raw_graph = json.load(json_file)
+            graph = keys_remap(raw_graph)
+        else:
+            print("Writing")
+            graph = createDict(list_coordinates,base_distance)
+            with open(js_file,'w') as js_wr:
+                json.dump(remap_keys(graph),js_wr,indent=4)
+    else:
+        graph = createDict(list_coordinates,base_distance)
+    open_list = list_coordinates.copy()
+    print(graph[open_list[6]])
+    paths = algo(graph,open_list[6],open_list[-1])
+    return [open_list[6]]+[path[0] for path in paths]
+
+def algo(G:dict,current_node:tuple,final_node:tuple) -> list:
+    """
+    Dijkstra Algorithm's with A* application.
+    From the complete grid `G`, the starting and ending node (coordinates) it'll return the best path between them.
+    """
+    open_list = {}
+    open_list[current_node] = (current_node,[],0)
+    closed_list = {}
+    while open_list:
+        list_action = G[current_node]
+        for action in list_action:
+            action_cost = action[1]
+            next_node = action[0]
+            if next_node not in closed_list:
+                total_cost = action_cost
+                if (next_node in open_list and open_list[next_node][2]>open_list[current_node][2]+total_cost) or (next_node not in open_list):
+                    next_node_tuple = (next_node,open_list[current_node][1]+[action],open_list[current_node][2]+total_cost)
+                    open_list[next_node] = next_node_tuple
+        closed_list[current_node] = open_list[current_node]
+        open_list.pop(current_node,None)
+        min_next_node = min(open_list.keys(),key=lambda k: open_list[k][2])
+        if (open_list[min_next_node][0] == final_node):
+            return open_list[min_next_node][1]
+        current_node = open_list[min_next_node][0]
+    # polygon = Polygon(list_coordinates)
+    # path = []
+    # not_good = []
+    # i = 0
+    # while len(open_list) >0:
+    #     k = 0
+    #     point1 = open_list[i]
+    #     open_list.pop(i)
+    #     if not point1 in closed_list:
+    #         closed_list[point1] = []
+    #         while k < len(open_list):
+    #             point2 = open_list[k]
+    #             distance = math.sqrt((point1[0]-point2[0])**2+(point1[1]-point2[1])**2)
+    #             if distance <= base_distance and open_list[k] not in not_good:
+    #                 closed_list[point1].append((point2,distance,k))
+    #             k += 1
+    #     if not open_list or len(closed_list[point1]) < 2:
+    #         return path
+    #     max_distance = max(closed_list[point1],key=lambda x: x[1])
+    #     point2 = max_distance[0]
+    #     segment = LineString([point1, point2])
+    #     #print(path)
+    #     #print(len(open_list))
+    #     print("PRIMA",len(closed_list[point1]))
+    #     while not segment.within(polygon) and closed_list[point1]:
+    #         print(len(closed_list[point1]))
+    #         max_distance = max(closed_list[point1],key=lambda x: x[1])
+    #         point2 = max_distance[0]
+    #         segment = LineString([point1, point2])
+    #         closed_list[point1].pop(closed_list[point1].index(max_distance))
+    #         #print(closed_list[point1])
+    #     if not closed_list[point1]:
+    #         for point in closed_list[path[-1]]:
+    #             open_list.append(point[0])
+    #         open_list.pop(max_distance[2])
+
+    #         not_good.append(point1)
+    #         open_list.append(path[-1])
+    #         i = len(open_list) - 1
+    #         continue
+    #     i = max_distance[2]
+    #     for point in closed_list[point1]:
+
+    #         if point in open_list:
+    #             open_list.pop(open_list.index(point))
+    #         #open_list.pop(points[2])
+    #     path.append(point2)
+
+    return
+
+
+def path_drone_field1(list_coordinates,base_distance):
     open_list = list_coordinates.copy()
     polygon = Polygon(list_coordinates)
     polygon_ext = LineString(list(polygon.exterior.coords))
@@ -213,9 +353,9 @@ def NewBorder(file_name:str,border_index:int,formatted:str):
     return Border(file_name,border_index,formatted)
 
 
-def DronePathBorder(border:Border,max_distance:int):
+def DronePathBorder(border:Border,max_distance:int,json_file:str):
     list_coordinates = border.getCoordinates().copy()
-    return path_drone_field(list_coordinates,max_distance)
+    return path_drone_field(list_coordinates,max_distance,json_file)
 
 def DisplayBorderPath(border:Border,path_drone_border:list,name_field:str,center:bool):
     list_coordinates = border.getCoordinates()
