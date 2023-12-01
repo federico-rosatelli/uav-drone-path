@@ -229,8 +229,15 @@ class Field:
         """
         self.drone_path = field.DronePathBorder(self.field,max_distance)
         if self.verbose:
-            print(self.drone_path)
+            self.Printer(self.drone_path)
         return self.drone_path
+
+    def Printer(self,data:list) -> None:
+        for i in range(len(data)):
+            if type(data[i]) == tuple or type(data[i]) == list:
+                print('\t'.join([str(data[i][k]) for k in range(len((data[i])))]))
+            else:
+                print(f'Data: {data[i]}')
     
     def DisplayBorderPath(self,info:list=[]) -> None:
         field.DisplayBorderPath(self.field,self.drone_path,self.name,info)
