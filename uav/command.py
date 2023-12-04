@@ -223,23 +223,32 @@ class Field:
         """
         self.field = field.NewBorder(file_name,border_index,formatted)
     
-    def DronePathBorder(self,max_distance:float=0.003) -> list:
+    def DronePathBorder(self,max_distance:float=0.003,json_file:str="") -> list:
         """
         - max_distance: maximum observation distance of the drone. Setted to 0.003
         """
-        self.drone_path = field.DronePathBorder(self.field,max_distance)
+        self.drone_path = field.DronePathBorder(self.field,max_distance,json_file)
         if self.verbose:
             self.Printer(self.drone_path)
         return self.drone_path
 
     def Printer(self,data:list) -> None:
+        printer = ""
         for i in range(len(data)):
             if type(data[i]) == tuple or type(data[i]) == list:
-                print('\t'.join([str(data[i][k]) for k in range(len((data[i])))]))
+                printer += "|\t"+str(data[i][0])+"\t"+str(data[i][1])+"\t|\n"
+                #print('\t'.join([str(data[i][k]) for k in range(len((data[i])))]))
             else:
-                print(f'Data: {data[i]}')
+                printer = f'Data: {data[i]}\n'
+        idx = printer.index("\n")
+        printer = "-"*idx+ "\n" + printer
+        print(printer)
     
     def DisplayBorderPath(self,info:list=[]) -> None:
+        """
+        Matplotlib display of field and path.
+        - info: list of info to display in the plot -> circle | triangulate
+        """
         field.DisplayBorderPath(self.field,self.drone_path,self.name,info)
 
 

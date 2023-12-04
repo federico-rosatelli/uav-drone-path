@@ -1,7 +1,10 @@
 """
 Field Module
 """
+import copy
+import json
 import math
+import os
 import matplotlib.pyplot as plt
 from shapely.geometry import LineString, Point, Polygon
 from shapely.ops import triangulate
@@ -48,66 +51,96 @@ class Border:
     def getCoordinates(self) -> list:
         return self.list_coordinates
 
-
-def path_drone_field(list_coordinates,base_distance):
-    open_list = list_coordinates.copy()
+def createDict(list_coordinates,base_distance):
     polygon = Polygon(list_coordinates)
-    polygon_ext = LineString(list(polygon.exterior.coords))
-
-    closed_list = [open_list[0]]
     i = 0
-    while open_list:
-        point1 = (open_list[i][0],open_list[i][1])
-        # point_a = Point(point1[0],point1[1])
-        # coordinate = open_list[i]
-        distances = []
-        k = 0
-        open_list.pop(i)
-        # deleting = []
-        while k < len(open_list):
-            point2 = (open_list[k][0],open_list[k][1])
-            distance = math.sqrt((point1[0]-point2[0])**2+(point1[1]-point2[1])**2)
-            
-            if distance >= base_distance:
-                
-                distances.append((distance,k))
-                k += 1
-
-
-            else:
-                # deleting.append((distance,point2))
-                open_list.pop(k)
-            
-        if len(distances) == 0:
-            return closed_list
-        min_distance = min(distances, key=lambda x: x[0])
+    graph = {}
+    while i < len(list_coordinates):
+        point1 = list_coordinates[i]
+        k = i + 1
+        graph[point1] = []
         
-        i = min_distance[1]
-        # point_b = Point(open_list[i][0],open_list[i][1])
-        # segment = LineString([point_a, point_b])
-        # while not segment.within(polygon) and len(distances)>1:
-        #     distances.pop(distances.index(min_distance))
-        #     min_distance = min(distances, key=lambda x: x[0])
-        #     i = min_distance[1]
-        #     point_b = Point(open_list[i][0],open_list[i][1])
-        #     segment = LineString([point_a, point_b])
+        while k-i < len(list_coordinates)/2 and k < len(list_coordinates):
+            point2 = list_coordinates[k]
+            distance = math.sqrt((point1[0]-point2[0])**2+(point1[1]-point2[1])**2)
+            if distance <= base_distance:
+                segment = LineString([point1, point2])
+                if segment.within(polygon):
+                    graph[point1].append((point2,distance))
+            k += 1
+        i += 1
+        print("{:.2f}".format(i/len(list_coordinates)*100),"%",end="\r")
+    return graph
 
-        # if not segment.within(polygon) and deleting:
-        #     good = (-math.inf,(0,0))
-        #     for dell in deleting:
-        #         point_b = Point(dell[1][0],dell[1][1])
-        #         segment = LineString([point_a, point_b])
-        #         if segment.within(polygon) and dell[0] > good[0]:
-        #             good = dell
-        #     open_list.append(dell[1])
-        #     i = len(open_list) - 1
-            # for dell in deleting:
-            #     if i != dell[1]:
-            #         open_list.pop(dell[1])
+def remap_keys(mapping):
+    return [{'key':k, 'value': mapping[k]} for k in mapping]
 
-        closed_list.append(open_list[i])
+def keys_remap(mapping):
+    graph = {}
+    for i in range(len(mapping)):
+        key = mapping[i]["key"]
+        value = mapping[i]["value"]
+        graph[tuple(key)] = [(tuple(v[0]),v[1]) for v in value]
+    return graph
 
-    return closed_list
+def path_drone_field(list_coordinates,base_distance,json_file):
+    if json_file:
+        js_file = json_file[:json_file.index(".")]+"_"+str(base_distance)+".json"
+        if os.path.exists(js_file):
+            with open(js_file, 'r') as json_file:
+                raw_graph = json.load(json_file)
+            graph = keys_remap(raw_graph)
+        else:
+            print("Writing")
+            graph = createDict(list_coordinates,base_distance)
+            with open(js_file,'w') as js_wr:
+                json.dump(remap_keys(graph),js_wr,indent=4)
+    else:
+        graph = createDict(list_coordinates,base_distance)
+    open_list = list_coordinates.copy()
+    #print(graph[open_list[1]])
+    paths = []
+    path,max_len_point = algo(graph,open_list[1],open_list[-1])
+    paths += path
+    while max_len_point != open_list[-1]:
+        print("{:.2f}".format((open_list.index(max_len_point)/len(open_list))*100),"%",end="\r")
+        path,max_len_point = algo(graph,open_list[open_list.index(max_len_point)+1],open_list[-1])
+        paths += path
+    return paths
+
+
+def algo(G:dict,current_node:tuple,final_node:tuple) -> list:
+    first_node = current_node
+    if current_node == final_node:
+        return [final_node],final_node
+    
+    open_list = G.copy()
+    closed_list = [current_node]
+    max_len = 0
+    max_len_point = ()
+    
+    history = []
+    while open_list:
+        if not current_node in history:
+            history.append(current_node)
+            open_list[current_node] = G[current_node].copy()
+        if len(closed_list) > max_len:
+            max_len = len(closed_list)
+            max_len_point = current_node
+        if final_node in [x[0] for x in open_list[current_node]]:
+            closed_list.append(final_node)
+            return closed_list,max_len_point
+        if not open_list[current_node]:
+            closed_list = closed_list[:-1]
+            if not closed_list:
+                return algo(G,first_node,max_len_point)[0],max_len_point
+            current_node = closed_list[-1]
+            continue
+        max_distance = max(open_list[current_node], key=lambda x:x[1])
+        open_list[current_node].pop(open_list[current_node].index(max_distance))
+        current_node = max_distance[0]
+        closed_list.append(current_node)
+    return [final_node],final_node
         
 
 def define_circle_quarter(coordinates):
@@ -213,9 +246,9 @@ def NewBorder(file_name:str,border_index:int,formatted:str):
     return Border(file_name,border_index,formatted)
 
 
-def DronePathBorder(border:Border,max_distance:int):
+def DronePathBorder(border:Border,max_distance:int,json_file:str):
     list_coordinates = border.getCoordinates().copy()
-    return path_drone_field(list_coordinates,max_distance)
+    return path_drone_field(list_coordinates,max_distance,json_file)
 
 def DisplayBorderPath(border:Border,path_drone_border:list,name_field:str,center:bool):
     list_coordinates = border.getCoordinates()

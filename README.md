@@ -45,8 +45,8 @@ This part of the library is based on the creation of a field from geographical c
 
 The creation of the field occurs via the `field` module. Through a few simple instructions, complex routes can be created that allow a drone to inspect well-defined areas of the border.
 
-<img src="img/Figure_3.png"  width="500" height="500" alt="test3 output">
-<img src="img/Figure_4.png"  width="500" height="500" alt="test4 output">
+<img src="img/Figure_6.png"  width="500" height="500" alt="test6 output">
+<img src="img/Figure_5.png"  width="500" height="500" alt="test5 output">
 
 ## Usage
 The use of this module is exactly the same as the previous one.
@@ -86,7 +86,7 @@ This package is not completed.
 - [x] Hawk's View Action
 - [x] 2D View of field
 - [x] Best path border control
-- [ ] Obstacle identifier in field control
+- [x] Obstacle identifier in field control
 - [ ] Implement More Action
 - [ ] Live Drone Test
 - [ ] Panorama mapping and Grid Implementation
