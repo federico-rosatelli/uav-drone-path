@@ -1,6 +1,7 @@
 """
 Field Module
 """
+import copy
 import json
 import math
 import os
@@ -54,33 +55,21 @@ def createDict(list_coordinates,base_distance):
     polygon = Polygon(list_coordinates)
     i = 0
     graph = {}
-    not_seen = list_coordinates.copy()
     while i < len(list_coordinates):
         point1 = list_coordinates[i]
         k = i + 1
         graph[point1] = []
         
         while k-i < len(list_coordinates)/2 and k < len(list_coordinates):
-            # if k-i > len(list_coordinates)/2:
-            #     #print(len(graph[point1]))
-            #     break
-            # if k == i or list_coordinates[k] in graph:
-            #     k += 1
-            #     continue
             point2 = list_coordinates[k]
             distance = math.sqrt((point1[0]-point2[0])**2+(point1[1]-point2[1])**2)
             if distance <= base_distance:
                 segment = LineString([point1, point2])
                 if segment.within(polygon):
                     graph[point1].append((point2,distance))
-                    # if point2 in not_seen:
-                    #     not_seen.pop(not_seen.index(point2))
-                    #already_seen.append(point2)
             k += 1
         i += 1
-        print(len(graph[point1]))
-    # print([list_coordinates.index(s) for s in not_seen])
-    # print(len(list_coordinates))
+        print("{:.2f}".format(i/len(list_coordinates)*100),"%",end="\r")
     return graph
 
 def remap_keys(mapping):
@@ -88,7 +77,6 @@ def remap_keys(mapping):
 
 def keys_remap(mapping):
     graph = {}
-    #print(mapping)
     for i in range(len(mapping)):
         key = mapping[i]["key"]
         value = mapping[i]["value"]
@@ -110,144 +98,49 @@ def path_drone_field(list_coordinates,base_distance,json_file):
     else:
         graph = createDict(list_coordinates,base_distance)
     open_list = list_coordinates.copy()
-    print(graph[open_list[6]])
-    paths = algo(graph,open_list[6],open_list[-1])
-    return [open_list[6]]+[path[0] for path in paths]
+    #print(graph[open_list[1]])
+    paths = []
+    path,max_len_point = algo(graph,open_list[1],open_list[-1])
+    paths += path
+    while max_len_point != open_list[-1]:
+        print("{:.2f}".format((open_list.index(max_len_point)/len(open_list))*100),"%",end="\r")
+        path,max_len_point = algo(graph,open_list[open_list.index(max_len_point)+1],open_list[-1])
+        paths += path
+    return paths
+
 
 def algo(G:dict,current_node:tuple,final_node:tuple) -> list:
-    """
-    Dijkstra Algorithm's with A* application.
-    From the complete grid `G`, the starting and ending node (coordinates) it'll return the best path between them.
-    """
-    open_list = {}
-    open_list[current_node] = (current_node,[],0)
-    closed_list = {}
+    first_node = current_node
+    if current_node == final_node:
+        return [final_node],final_node
+    
+    open_list = G.copy()
+    closed_list = [current_node]
+    max_len = 0
+    max_len_point = ()
+    
+    history = []
     while open_list:
-        list_action = G[current_node]
-        for action in list_action:
-            action_cost = action[1]
-            next_node = action[0]
-            if next_node not in closed_list:
-                total_cost = action_cost
-                if (next_node in open_list and open_list[next_node][2]>open_list[current_node][2]+total_cost) or (next_node not in open_list):
-                    next_node_tuple = (next_node,open_list[current_node][1]+[action],open_list[current_node][2]+total_cost)
-                    open_list[next_node] = next_node_tuple
-        closed_list[current_node] = open_list[current_node]
-        open_list.pop(current_node,None)
-        min_next_node = min(open_list.keys(),key=lambda k: open_list[k][2])
-        if (open_list[min_next_node][0] == final_node):
-            return open_list[min_next_node][1]
-        current_node = open_list[min_next_node][0]
-    # polygon = Polygon(list_coordinates)
-    # path = []
-    # not_good = []
-    # i = 0
-    # while len(open_list) >0:
-    #     k = 0
-    #     point1 = open_list[i]
-    #     open_list.pop(i)
-    #     if not point1 in closed_list:
-    #         closed_list[point1] = []
-    #         while k < len(open_list):
-    #             point2 = open_list[k]
-    #             distance = math.sqrt((point1[0]-point2[0])**2+(point1[1]-point2[1])**2)
-    #             if distance <= base_distance and open_list[k] not in not_good:
-    #                 closed_list[point1].append((point2,distance,k))
-    #             k += 1
-    #     if not open_list or len(closed_list[point1]) < 2:
-    #         return path
-    #     max_distance = max(closed_list[point1],key=lambda x: x[1])
-    #     point2 = max_distance[0]
-    #     segment = LineString([point1, point2])
-    #     #print(path)
-    #     #print(len(open_list))
-    #     print("PRIMA",len(closed_list[point1]))
-    #     while not segment.within(polygon) and closed_list[point1]:
-    #         print(len(closed_list[point1]))
-    #         max_distance = max(closed_list[point1],key=lambda x: x[1])
-    #         point2 = max_distance[0]
-    #         segment = LineString([point1, point2])
-    #         closed_list[point1].pop(closed_list[point1].index(max_distance))
-    #         #print(closed_list[point1])
-    #     if not closed_list[point1]:
-    #         for point in closed_list[path[-1]]:
-    #             open_list.append(point[0])
-    #         open_list.pop(max_distance[2])
-
-    #         not_good.append(point1)
-    #         open_list.append(path[-1])
-    #         i = len(open_list) - 1
-    #         continue
-    #     i = max_distance[2]
-    #     for point in closed_list[point1]:
-
-    #         if point in open_list:
-    #             open_list.pop(open_list.index(point))
-    #         #open_list.pop(points[2])
-    #     path.append(point2)
-
-    return
-
-
-def path_drone_field1(list_coordinates,base_distance):
-    open_list = list_coordinates.copy()
-    polygon = Polygon(list_coordinates)
-    polygon_ext = LineString(list(polygon.exterior.coords))
-
-    closed_list = [open_list[0]]
-    i = 0
-    while open_list:
-        point1 = (open_list[i][0],open_list[i][1])
-        # point_a = Point(point1[0],point1[1])
-        # coordinate = open_list[i]
-        distances = []
-        k = 0
-        open_list.pop(i)
-        # deleting = []
-        while k < len(open_list):
-            point2 = (open_list[k][0],open_list[k][1])
-            distance = math.sqrt((point1[0]-point2[0])**2+(point1[1]-point2[1])**2)
-            
-            if distance >= base_distance:
-                
-                distances.append((distance,k))
-                k += 1
-
-
-            else:
-                # deleting.append((distance,point2))
-                open_list.pop(k)
-            
-        if len(distances) == 0:
-            return closed_list
-        min_distance = min(distances, key=lambda x: x[0])
-        
-        i = min_distance[1]
-        # point_b = Point(open_list[i][0],open_list[i][1])
-        # segment = LineString([point_a, point_b])
-        # while not segment.within(polygon) and len(distances)>1:
-        #     distances.pop(distances.index(min_distance))
-        #     min_distance = min(distances, key=lambda x: x[0])
-        #     i = min_distance[1]
-        #     point_b = Point(open_list[i][0],open_list[i][1])
-        #     segment = LineString([point_a, point_b])
-
-        # if not segment.within(polygon) and deleting:
-        #     good = (-math.inf,(0,0))
-        #     for dell in deleting:
-        #         point_b = Point(dell[1][0],dell[1][1])
-        #         segment = LineString([point_a, point_b])
-        #         if segment.within(polygon) and dell[0] > good[0]:
-        #             good = dell
-        #     open_list.append(dell[1])
-        #     i = len(open_list) - 1
-            # for dell in deleting:
-            #     if i != dell[1]:
-            #         open_list.pop(dell[1])
-
-        closed_list.append(open_list[i])
-
-    return closed_list
+        if not current_node in history:
+            history.append(current_node)
+            open_list[current_node] = G[current_node].copy()
+        if len(closed_list) > max_len:
+            max_len = len(closed_list)
+            max_len_point = current_node
+        if final_node in [x[0] for x in open_list[current_node]]:
+            closed_list.append(final_node)
+            return closed_list,max_len_point
+        if not open_list[current_node]:
+            closed_list = closed_list[:-1]
+            if not closed_list:
+                return algo(G,first_node,max_len_point)[0],max_len_point
+            current_node = closed_list[-1]
+            continue
+        max_distance = max(open_list[current_node], key=lambda x:x[1])
+        open_list[current_node].pop(open_list[current_node].index(max_distance))
+        current_node = max_distance[0]
+        closed_list.append(current_node)
+    return [final_node],final_node
         
 
 def define_circle_quarter(coordinates):
