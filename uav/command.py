@@ -226,6 +226,7 @@ class Field:
     def DronePathBorder(self,max_distance:float=0.003,json_file:str="") -> list:
         """
         - max_distance: maximum observation distance of the drone. Setted to 0.003
+        - json_file: name of the json file to write/read drone's path
         """
         self.drone_path = field.DronePathBorder(self.field,max_distance,json_file)
         if self.verbose:
@@ -244,12 +245,13 @@ class Field:
         printer = "-"*idx+ "\n" + printer
         print(printer)
     
-    def DisplayBorderPath(self,info:list=[]) -> None:
+    def DisplayBorderPath(self,drone_path:list,info:list=[]) -> None:
         """
         Matplotlib display of field and path.
+        - drone_path: the drone's path do display
         - info: list of info to display in the plot -> circle | triangulate
         """
-        field.DisplayBorderPath(self.field,self.drone_path,self.name,info)
+        field.DisplayBorderPath(self.field,drone_path,self.name,info)
 
 
 def NewField(name:str="",verbose:bool=False):

@@ -85,7 +85,7 @@ def keys_remap(mapping):
 
 def path_drone_field(list_coordinates,base_distance,json_file):
     if json_file:
-        js_file = json_file[:json_file.index(".")]+"_"+str(base_distance)+".json"
+        js_file = json_file+"_"+str(base_distance)+".json"
         if os.path.exists(js_file):
             with open(js_file, 'r') as json_file:
                 raw_graph = json.load(json_file)
