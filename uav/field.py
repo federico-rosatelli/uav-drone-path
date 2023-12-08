@@ -6,6 +6,7 @@ import json
 import math
 import os
 import matplotlib.pyplot as plt
+import numpy as np
 from shapely.geometry import LineString, Point, Polygon
 from shapely.ops import triangulate
 
@@ -200,23 +201,28 @@ def define_circle(coordinates):
     return center_point, max_distance
 
 
-def display_border_field(list_coordinates,prev_not_view,name_field,extra) -> None:
+def display_border_field(list_coordinates,paths,name_field,info,labels) -> None:
     fig = plt.figure()
     ax = fig.add_subplot()
     new_coordinates = [[],[]]
-    path = [[],[]]
-    for view in prev_not_view:
-        path[0].append(view[0])
-        path[1].append(view[1])
+    all_paths = []
+    for i in range(len(paths)):
+        path = [[],[]]
+        for view in paths[i]:
+            path[0].append(view[0])
+            path[1].append(view[1])
+        all_paths.append(path)
     for coordinate in list_coordinates:
         new_coordinates[0].append(coordinate[0])
         new_coordinates[1].append(coordinate[1])
-    
     ax.plot(new_coordinates[0],new_coordinates[1],'r')
-    
-    ax.plot(path[0],path[1],'b')
+    for i in range(len(all_paths)):
+        path = all_paths[i]
+        ax.plot(path[0],path[1],label=labels[i] if i < len(labels) else name_field+str(i+1))
+    plt.legend(loc='upper right', fontsize='small', frameon=True, title='Legend Title')
 
-    if "triangulate" in extra:
+
+    if  "triangulate" in info:
 
         polygon = Polygon(list_coordinates)
         triangles = triangulate_within(polygon)
@@ -229,7 +235,7 @@ def display_border_field(list_coordinates,prev_not_view,name_field,extra) -> Non
                 triangle[1].append(coo[1])
             ax.plot(triangle[0],triangle[1],'g')
 
-    if "circle" in extra:
+    if "circle" in info:
         center,radius = define_circle(list_coordinates)
         circle = plt.Circle(center, radius, color='g', fill=False,clip_on=False)
         ax.add_patch(circle)
@@ -250,6 +256,6 @@ def DronePathBorder(border:Border,max_distance:int,json_file:str):
     list_coordinates = border.getCoordinates().copy()
     return path_drone_field(list_coordinates,max_distance,json_file)
 
-def DisplayBorderPath(border:Border,path_drone_border:list,name_field:str,center:bool):
+def DisplayBorderPath(border:Border,path_drone_border:tuple[list[tuple], ...],name_field:str,info:list[str],labels:list[str]):
     list_coordinates = border.getCoordinates()
-    display_border_field(list_coordinates,path_drone_border,name_field,center)
+    display_border_field(list_coordinates,path_drone_border,name_field,info,labels)

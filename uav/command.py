@@ -245,13 +245,13 @@ class Field:
         printer = "-"*idx+ "\n" + printer
         print(printer)
     
-    def DisplayBorderPath(self,drone_path:list,info:list=[]) -> None:
+    def DisplayBorderPath(self,*drone_path:list[tuple],info:list[str]=[],labels:list[str]=[]) -> None:
         """
         Matplotlib display of field and path.
         - drone_path: the drone's path do display
         - info: list of info to display in the plot -> circle | triangulate
         """
-        field.DisplayBorderPath(self.field,drone_path,self.name,info)
+        field.DisplayBorderPath(self.field,drone_path,self.name,info,labels)
 
 
 def NewField(name:str="",verbose:bool=False):
